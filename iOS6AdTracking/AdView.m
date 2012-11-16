@@ -30,23 +30,30 @@
         if (!result) {
             NSLog(@"Failed to load product: %@", error);
         } else {
-            [self.parentViewController  presentViewController:productViewController animated:YES completion:^(void) {
+            [self.parentViewController presentViewController:productViewController animated:YES completion:^(void) {
                 NSLog(@"Presented product with ID: %@", self.productId);
             }];
         }
     }];
     
-    // Prepare the callback request using the callback URL and the advertising ID.
-    NSURL *baseUrl = [NSURL URLWithString:self.callbackUrl];
-    AFHTTPClient *httpClient = [AFHTTPClient clientWithBaseURL:baseUrl];
-    NSDictionary *httpParameters = [NSDictionary dictionaryWithObject:self.advertisingId forKey:@"advertising_id"];
-    
-    // Actually make the callback.
-    [httpClient getPath:@"" parameters:httpParameters success:^(AFHTTPRequestOperation *operation, id responseObject) {
-        NSLog(@"Finished callback: %@", operation.request.URL);
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        NSLog(@"Failed callback: %@", error);
+    // make the callback
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:self.callbackUrl]];
+    AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+    [operation setRedirectResponseBlock:^NSURLRequest *(NSURLConnection *connection, NSURLRequest *request, NSURLResponse *redirectResponse) {
+        NSString *url = request.URL.absoluteString;
+        if (redirectResponse == nil) {
+            NSLog(@"request to  %@", url);
+        } else {
+            NSLog(@"redirect to %@", url);
+        }
+        return request;
     }];
+    [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSLog(@"success");
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"failure");
+    }];
+    [operation start];
 }
 
 // SKStoreProductViewControllerDelegate method that dismisses the product view controller
